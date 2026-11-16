@@ -16,6 +16,7 @@ import { ContentDraft, UserRole } from '@/lib/types';
 import { defaultBrandBrain } from '@/lib/brandBrain';
 import { benchmarkTestCases } from '@/lib/benchmarkData';
 import { runMultimodalScan } from '@/lib/linterEngine';
+import { Sparkles, Compass, X, ArrowRight } from 'lucide-react';
 
 export default function Home() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -28,12 +29,13 @@ export default function Home() {
   const [activeViolationId, setActiveViolationId] = useState<string | null>(null);
   const [isScanning, setIsScanning] = useState(false);
 
-  // Modals
+  // Modals & Tour
   const [isBrandBrainOpen, setIsBrandBrainOpen] = useState(false);
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isTeamOpen, setIsTeamOpen] = useState(false);
   const [isTourOpen, setIsTourOpen] = useState(false);
+  const [showFirstTimerWelcome, setShowFirstTimerWelcome] = useState(true);
 
   // Toggle theme
   const handleToggleTheme = () => {
@@ -187,7 +189,7 @@ export default function Home() {
     <div className={`flex h-screen overflow-hidden font-sans transition-colors duration-200 ${
       isDark ? 'bg-[#080b11] text-slate-100' : 'bg-slate-50 text-slate-900'
     }`}>
-      {/* 1. Collapsible Left Navigation Sidebar */}
+      {/* 1. Left Navigation Sidebar */}
       <Sidebar
         currentTab={currentTab}
         onTabChange={(tab) => {
@@ -203,7 +205,10 @@ export default function Home() {
         onOpenArchitecture={() => setIsArchitectureOpen(true)}
         onOpenTeam={() => setIsTeamOpen(true)}
         onOpenPDF={handleOpenPDF}
-        onStartTour={() => setIsTourOpen(true)}
+        onStartTour={() => {
+          setShowFirstTimerWelcome(false);
+          setIsTourOpen(true);
+        }}
         isDark={isDark}
         onToggleTheme={handleToggleTheme}
       />
@@ -221,7 +226,10 @@ export default function Home() {
           isScanning={isScanning}
           isDark={isDark}
           onToggleTheme={handleToggleTheme}
-          onStartTour={() => setIsTourOpen(true)}
+          onStartTour={() => {
+            setShowFirstTimerWelcome(false);
+            setIsTourOpen(true);
+          }}
         />
 
         {/* Workstation Center & Inspector */}
@@ -264,6 +272,58 @@ export default function Home() {
           isDark={isDark}
         />
       </div>
+
+      {/* First-Timer Welcome Dialog */}
+      {showFirstTimerWelcome && !isTourOpen && (
+        <div className="fixed bottom-16 right-6 z-40 max-w-sm w-full animate-pop-in">
+          <div className={`p-4 rounded-2xl border shadow-2xl backdrop-blur-md ${
+            isDark 
+              ? 'bg-[#0f1523]/95 border-blue-500/40 text-slate-100 shadow-blue-500/10' 
+              : 'bg-white/95 border-blue-200 text-slate-900 shadow-xl'
+          }`}>
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-700/40">
+              <div className="flex items-center space-x-2">
+                <span className="p-1 rounded-md bg-blue-600/20 text-blue-400">
+                  <Compass className="w-4 h-4 animate-spin-slow" />
+                </span>
+                <span className="font-bold text-xs">New to BrandAegis?</span>
+              </div>
+              <button
+                onClick={() => setShowFirstTimerWelcome(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className={`text-xs leading-relaxed mb-3 ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+              Take a <strong>60-second interactive tour</strong> to see how BrandAegis lints copy, cites brand guidelines, and orchestrates tiered sign-offs.
+            </p>
+
+            <div className="flex items-center justify-between">
+              <button
+                onClick={() => setShowFirstTimerWelcome(false)}
+                className={`text-[11px] font-medium transition ${
+                  isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800'
+                }`}
+              >
+                Explore on my own
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowFirstTimerWelcome(false);
+                  setIsTourOpen(true);
+                }}
+                className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-lg font-bold text-xs shadow-md flex items-center space-x-1.5 transition transform active:scale-95"
+              >
+                <span>Start Tour</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Interactive Step-by-Step Tutorial Tour */}
       <TutorialTour
