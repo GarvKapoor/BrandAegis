@@ -12,7 +12,7 @@ import {
   ShieldCheck, 
   BookOpen, 
   Eye, 
-  Compass,
+  Compass, 
   ArrowRight,
   MousePointerClick
 } from 'lucide-react';
@@ -35,7 +35,7 @@ const TOUR_STEPS: TourStep[] = [
     icon: <Layers className="w-5 h-5 text-blue-400" />,
     description: 'Start here! Select a pre-loaded test case to see how BrandAegis flags SLA drift, logo clearspace breaches, or social contrast issues.',
     proTip: 'The "FinTech Cloud Launch" scenario has 100% uptime claims and marketing superlatives that violate legal clauses.',
-    actionHint: 'Notice the highlighted scenario selector in the top bar.'
+    actionHint: 'Look at the glowing highlighted scenario selector in the top bar.'
   },
   {
     targetId: 'tour-canvas-preview',
@@ -44,7 +44,7 @@ const TOUR_STEPS: TourStep[] = [
     icon: <Eye className="w-5 h-5 text-teal-400" />,
     description: 'Your marketing copy is rendered inside an interactive canvas. Detected compliance breaches are highlighted with glowing badges directly on the text.',
     proTip: 'Clicking any highlighted chip (like "guarantees 100%") jumps to that exact legal citation in the Inspector!',
-    actionHint: 'Notice the glowing red/amber chips on the draft text.'
+    actionHint: 'Notice the highlighted chips on the draft text.'
   },
   {
     targetId: 'tour-inspector-panel',
@@ -87,6 +87,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
   isDark
 }) => {
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
 
   const currentStep = TOUR_STEPS[currentStepIdx];
   const isFirst = currentStepIdx === 0;
@@ -132,7 +133,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleNext, handlePrev, onClose]);
 
-  // Apply element spotlight
+  // Apply high-visibility element spotlight
   useEffect(() => {
     if (!isOpen) return;
 
@@ -141,12 +142,24 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
     if (el) {
       el.classList.add('tour-target-highlight');
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTargetRect(el.getBoundingClientRect());
     }
+
+    const updateRect = () => {
+      if (el) {
+        setTargetRect(el.getBoundingClientRect());
+      }
+    };
+
+    window.addEventListener('resize', updateRect);
+    window.addEventListener('scroll', updateRect, true);
 
     return () => {
       if (el) {
         el.classList.remove('tour-target-highlight');
       }
+      window.removeEventListener('resize', updateRect);
+      window.removeEventListener('scroll', updateRect, true);
     };
   }, [isOpen, currentStepIdx]);
 
@@ -154,27 +167,46 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
 
   return (
     <>
-      {/* 1. Backdrop overlay with cutout effect */}
+      {/* 1. Deep high-contrast backdrop overlay */}
       <div 
-        className="fixed inset-0 z-[90] bg-black/55 backdrop-blur-[2px] transition-opacity duration-300 pointer-events-auto"
+        className="fixed inset-0 z-[90] bg-black/75 backdrop-blur-[3px] transition-opacity duration-300 pointer-events-auto"
         onClick={onClose}
       />
 
-      {/* 2. Top-Center Tour Navigation Pill */}
-      <div className="fixed top-5 left-1/2 -translate-x-1/2 z-[100] animate-pop-in pointer-events-auto">
+      {/* 2. Floating Neon Target Pin Badge directly pointing at the highlighted element */}
+      {targetRect && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: `${Math.max(14, targetRect.top - 46)}px`,
+            left: `${Math.max(14, targetRect.left + (targetRect.width / 2) - 120)}px`,
+            zIndex: 99,
+          }}
+          className="pointer-events-none animate-bounce"
+        >
+          <div className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 text-white font-black text-xs shadow-2xl shadow-cyan-400/70 flex items-center space-x-2 border-2 border-white ring-4 ring-cyan-500/40">
+            <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
+            <span className="tracking-wide">TARGET: {currentStep.badge}</span>
+            <span className="text-white">↓</span>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Top-Center Tour Navigation Pill */}
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] animate-pop-in pointer-events-auto">
         <div className={`px-4 py-2 rounded-full border shadow-2xl backdrop-blur-md flex items-center space-x-3 text-xs font-semibold ${
           isDark 
-            ? 'bg-[#0f172a]/95 border-blue-500/50 text-white shadow-blue-500/20' 
-            : 'bg-white/95 border-blue-200 text-slate-900 shadow-xl'
+            ? 'bg-[#0f172a]/95 border-cyan-400/60 text-white shadow-cyan-500/30' 
+            : 'bg-white/95 border-blue-400 text-slate-900 shadow-xl'
         }`}>
-          <span className="flex items-center space-x-1.5 text-blue-400 font-mono font-bold">
+          <span className="flex items-center space-x-1.5 text-cyan-400 font-mono font-bold">
             <Compass className="w-4 h-4 animate-spin-slow" />
             <span>Interactive Tour ({currentStepIdx + 1}/5)</span>
           </span>
 
           <div className="h-3 w-px bg-slate-700/60" />
 
-          <span className="text-slate-300 truncate max-w-xs">
+          <span className="text-slate-200 truncate max-w-xs font-medium">
             {currentStep.title}
           </span>
 
@@ -188,22 +220,22 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
         </div>
       </div>
 
-      {/* 3. Docked Floating Spotlight Card (Bottom-Right, Never Occluding Center Content) */}
+      {/* 4. Docked Floating Spotlight Card (Bottom-Right, Never Occluding Center Content) */}
       <div className="fixed bottom-6 right-6 z-[100] max-w-md w-full animate-pop-in pointer-events-auto">
-        <div className={`p-5 rounded-2xl border shadow-2xl backdrop-blur-xl transition-all duration-300 ${
+        <div className={`p-5 rounded-2xl border-2 shadow-2xl backdrop-blur-xl transition-all duration-300 ${
           isDark 
-            ? 'bg-[#0d1322]/95 border-blue-500/50 text-slate-100 shadow-blue-500/20' 
-            : 'bg-white/95 border-blue-200 text-slate-900 shadow-2xl'
+            ? 'bg-[#0d1322]/95 border-cyan-400/60 text-slate-100 shadow-cyan-500/25 ring-2 ring-cyan-500/20' 
+            : 'bg-white/95 border-blue-400 text-slate-900 shadow-2xl ring-2 ring-blue-500/10'
         }`}>
           {/* Header */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-700/50 mb-3">
             <div className="flex items-center space-x-2.5">
-              <div className="p-2 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400">
+              <div className="p-2 rounded-xl bg-cyan-600/20 border border-cyan-500/40 text-cyan-400">
                 {currentStep.icon}
               </div>
               <div>
                 <div className="flex items-center space-x-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-400 font-mono">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400 font-mono">
                     {currentStep.badge}
                   </span>
                   <span className="text-[10px] text-slate-400">
@@ -228,7 +260,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
           </div>
 
           {/* Action Hint Target */}
-          <div className="flex items-center space-x-1.5 text-xs text-blue-400 font-medium mb-2.5">
+          <div className="flex items-center space-x-1.5 text-xs text-cyan-400 font-semibold mb-2.5">
             <MousePointerClick className="w-3.5 h-3.5 animate-bounce" />
             <span>{currentStep.actionHint}</span>
           </div>
@@ -264,7 +296,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
                   }}
                   className={`h-2 rounded-full transition-all duration-300 ${
                     idx === currentStepIdx
-                      ? 'w-6 bg-blue-500 shadow-sm shadow-blue-500/50'
+                      ? 'w-6 bg-cyan-400 shadow-sm shadow-cyan-400/70'
                       : isDark ? 'w-2 bg-slate-700 hover:bg-slate-600' : 'w-2 bg-slate-300 hover:bg-slate-400'
                   }`}
                   title={`Jump to Step ${idx + 1}`}
@@ -288,7 +320,7 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
 
               <button
                 onClick={handleNext}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-blue-500/30 flex items-center space-x-1.5 transition transform active:scale-95 cursor-pointer"
+                className="px-4 py-2 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white rounded-xl font-bold text-xs shadow-lg shadow-cyan-500/30 flex items-center space-x-1.5 transition transform active:scale-95 cursor-pointer"
               >
                 <span>{isLast ? 'Complete Tour 🎉' : `Next Step (${currentStepIdx + 2}/5)`}</span>
                 {!isLast && <ChevronRight className="w-4 h-4" />}

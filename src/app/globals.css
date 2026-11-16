@@ -39,22 +39,27 @@ body {
   background: rgba(148, 163, 184, 0.45);
 }
 
-/* Pulsing Spotlight Glow for Tutorial */
-@keyframes tourPulse {
+/* Ultra-High-Visibility Spotlight Glow for Tutorial */
+@keyframes tourPulseUltra {
   0%, 100% {
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6), 0 0 25px rgba(59, 130, 246, 0.4);
+    outline: 4px solid #38bdf8 !important;
+    outline-offset: 4px;
+    box-shadow: 0 0 0 8px rgba(56, 189, 248, 0.45), 0 0 45px rgba(56, 189, 248, 0.85), inset 0 0 25px rgba(56, 189, 248, 0.25) !important;
   }
   50% {
-    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.9), 0 0 45px rgba(59, 130, 246, 0.7);
+    outline: 4px solid #60a5fa !important;
+    outline-offset: 7px;
+    box-shadow: 0 0 0 14px rgba(96, 165, 250, 0.7), 0 0 75px rgba(96, 165, 250, 0.95), inset 0 0 40px rgba(96, 165, 250, 0.4) !important;
   }
 }
 
 .tour-target-highlight {
-  animation: tourPulse 1.8s infinite ease-in-out;
-  position: relative;
-  z-index: 35 !important;
-  border-radius: 0.75rem;
-  transition: all 0.3s ease;
+  animation: tourPulseUltra 1.4s infinite ease-in-out !important;
+  position: relative !important;
+  z-index: 95 !important;
+  border-radius: 0.85rem !important;
+  background-color: rgba(56, 189, 248, 0.08) !important;
+  transition: all 0.25s ease-out !important;
 }
 
 /* Smooth Fade & Pop Animations */

@@ -184,7 +184,7 @@ export default function Home() {
   };
 
   const handleOpenPDF = () => {
-    window.open('/BrandAegis_Round1_Submission.pdf', '_blank');
+    window.open('/BrandAegis_Round2_Submission.pdf', '_blank');
   };
 
   if (viewMode === 'landing') {
