@@ -4,11 +4,9 @@ import React, { useState } from 'react';
 import { ContentDraft, Violation } from '@/lib/types';
 import { 
   Sparkles, 
-  Layers, 
   Code, 
   CheckCircle2, 
   AlertOctagon, 
-  Maximize2, 
   Eye, 
   Palette,
   FileCheck,
@@ -21,6 +19,7 @@ interface InteractiveCanvasProps {
   onApplyFix: (violationId: string) => void;
   activeViolationId?: string | null;
   onSelectViolation: (violationId: string) => void;
+  isDark: boolean;
 }
 
 export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
@@ -29,6 +28,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
   onApplyFix,
   activeViolationId,
   onSelectViolation,
+  isDark,
 }) => {
   const [canvasMode, setCanvasMode] = useState<'preview' | 'diff' | 'editor'>('preview');
 
@@ -41,18 +41,17 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
 
     if (flaggedViolations.length === 0) {
       return (
-        <p className="text-slate-200 text-sm leading-relaxed font-normal whitespace-pre-wrap">
+        <p className={`text-sm leading-relaxed font-normal whitespace-pre-wrap ${
+          isDark ? 'text-slate-200' : 'text-slate-800'
+        }`}>
           {text}
         </p>
       );
     }
 
-    // Segment text by flagged spans
     const segments: React.ReactNode[] = [];
-    let remaining = text;
     let keyIdx = 0;
 
-    // Sort flagged violations by their appearance in text
     const sorted = [...flaggedViolations].sort((a, b) => {
       const idxA = text.indexOf(a.flaggedSpan || '');
       const idxB = text.indexOf(b.flaggedSpan || '');
@@ -64,16 +63,14 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
       const span = viol.flaggedSpan || '';
       const idx = text.indexOf(span, currentPos);
       if (idx !== -1) {
-        // Text before the violation
         if (idx > currentPos) {
           segments.push(
-            <span key={`text_${keyIdx++}`} className="text-slate-300">
+            <span key={`text_${keyIdx++}`} className={isDark ? 'text-slate-300' : 'text-slate-700'}>
               {text.slice(currentPos, idx)}
             </span>
           );
         }
 
-        // The flagged violation span
         const isSelected = activeViolationId === viol.id;
         const isCritical = viol.severity === 'critical';
 
@@ -83,9 +80,13 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
             onClick={() => onSelectViolation(viol.id)}
             className={`inline-block cursor-pointer px-1.5 py-0.5 rounded transition mx-0.5 relative group ${
               isCritical
-                ? 'bg-red-500/20 text-red-300 border-b-2 border-red-500 hover:bg-red-500/30'
-                : 'bg-amber-500/20 text-amber-300 border-b-2 border-amber-500 hover:bg-amber-500/30'
-            } ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
+                ? isDark
+                  ? 'bg-red-500/20 text-red-300 border-b-2 border-red-500 hover:bg-red-500/30'
+                  : 'bg-red-100 text-red-800 border-b-2 border-red-600 hover:bg-red-200'
+                : isDark
+                  ? 'bg-amber-500/20 text-amber-300 border-b-2 border-amber-500 hover:bg-amber-500/30'
+                  : 'bg-amber-100 text-amber-900 border-b-2 border-amber-600 hover:bg-amber-200'
+            } ${isSelected ? 'ring-2 ring-blue-500 shadow-md scale-105' : ''}`}
             title="Click to inspect rule in Copilot panel"
           >
             <span className="font-semibold">{span}</span>
@@ -103,7 +104,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
 
     if (currentPos < text.length) {
       segments.push(
-        <span key={`text_end_${keyIdx++}`} className="text-slate-300">
+        <span key={`text_end_${keyIdx++}`} className={isDark ? 'text-slate-300' : 'text-slate-700'}>
           {text.slice(currentPos)}
         </span>
       );
@@ -116,17 +117,26 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
   const logoBreached = currentDraft.visualData?.logoDetection.hasBreach;
 
   return (
-    <div className="flex-1 flex flex-col bg-[#0b0f19] border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+    <div 
+      id="tour-canvas-preview"
+      className={`flex-1 flex flex-col border rounded-2xl overflow-hidden shadow-xl transition-colors duration-200 ${
+        isDark ? 'bg-[#0b0f19] border-slate-800' : 'bg-white border-slate-200 shadow-slate-200/50'
+      }`}
+    >
       {/* Canvas Top Bar */}
-      <div className="h-12 border-b border-slate-800 px-4 flex items-center justify-between bg-slate-950/60">
+      <div className={`h-12 border-b px-4 flex items-center justify-between ${
+        isDark ? 'border-slate-800 bg-slate-950/60' : 'border-slate-200 bg-slate-50'
+      }`}>
         <div className="flex items-center space-x-2">
-          <div className="flex bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-xs">
+          <div className={`flex p-0.5 rounded-lg border text-xs ${
+            isDark ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+          }`}>
             <button
               onClick={() => setCanvasMode('preview')}
               className={`px-3 py-1 font-semibold rounded-md transition flex items-center space-x-1.5 ${
                 canvasMode === 'preview'
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Eye className="w-3.5 h-3.5" />
@@ -138,7 +148,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
               className={`px-3 py-1 font-semibold rounded-md transition flex items-center space-x-1.5 ${
                 canvasMode === 'diff'
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -150,7 +160,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
               className={`px-3 py-1 font-semibold rounded-md transition flex items-center space-x-1.5 ${
                 canvasMode === 'editor'
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-slate-400 hover:text-white'
+                  : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Code className="w-3.5 h-3.5" />
@@ -159,9 +169,9 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 text-[11px] text-slate-400 font-mono">
+        <div className="flex items-center space-x-2 text-[11px] font-mono text-slate-500">
           <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
-          <span>Grounded RAG Engine Active</span>
+          <span>Grounded RAG Active</span>
         </div>
       </div>
 
@@ -170,9 +180,11 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
         {/* MODE 1: LIVE CREATIVE PREVIEW */}
         {canvasMode === 'preview' && (
           <div className="max-w-2xl mx-auto space-y-6">
-            {/* Visual Graphic Banner (When available in preset) */}
+            {/* Visual Graphic Banner */}
             {hasVisual && (
-              <div className="rounded-xl overflow-hidden border border-slate-700 bg-slate-950 shadow-2xl relative">
+              <div className={`rounded-xl overflow-hidden border shadow-xl relative ${
+                isDark ? 'border-slate-700 bg-slate-950' : 'border-slate-300 bg-slate-100'
+              }`}>
                 {/* Visual Banner Canvas */}
                 <div className="relative h-64 bg-gradient-to-r from-blue-700 via-indigo-800 to-slate-950 p-6 flex flex-col justify-between overflow-hidden">
                   {/* Logo Bounding Box Overlay */}
@@ -180,7 +192,7 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
                     onClick={() => onSelectViolation('viol_2_1')}
                     className={`absolute top-2 left-3 border-2 rounded p-1 cursor-pointer transition ${
                       logoBreached
-                        ? 'border-red-500 bg-red-500/25 text-red-200 ring-2 ring-red-500/40'
+                        ? 'border-red-500 bg-red-500/25 text-red-200 ring-2 ring-red-500/40 animate-pulse'
                         : 'border-teal-400 bg-teal-400/20 text-teal-200'
                     }`}
                   >
@@ -226,15 +238,17 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
                 </div>
 
                 {/* Banner Diagnostics Bar */}
-                <div className="p-3 bg-slate-900/90 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+                <div className={`p-3 border-t flex items-center justify-between text-xs ${
+                  isDark ? 'bg-slate-900 border-slate-800 text-slate-400' : 'bg-white border-slate-200 text-slate-600'
+                }`}>
                   <div className="flex items-center space-x-4">
                     <span className="flex items-center space-x-1">
-                      <Palette className="w-3.5 h-3.5 text-blue-400" />
-                      <span>Palette Match: <strong className="text-amber-400">Drift Detected</strong></span>
+                      <Palette className="w-3.5 h-3.5 text-blue-500" />
+                      <span>Palette Match: <strong className="text-amber-500">Drift Detected</strong></span>
                     </span>
                     <span className="flex items-center space-x-1">
-                      <FileCheck className="w-3.5 h-3.5 text-teal-400" />
-                      <span>WCAG Contrast: <strong className="text-teal-400">5.2:1 (Pass)</strong></span>
+                      <FileCheck className="w-3.5 h-3.5 text-teal-500" />
+                      <span>WCAG Contrast: <strong className="text-teal-600">5.2:1 (Pass)</strong></span>
                     </span>
                   </div>
 
@@ -251,36 +265,50 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
             )}
 
             {/* Rendered Ad / Social Creative Card */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-6 shadow-2xl relative">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-4">
+            <div className={`rounded-2xl border p-6 shadow-xl relative transition-colors ${
+              isDark ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-white shadow-slate-100'
+            }`}>
+              <div className={`flex items-center justify-between pb-4 border-b mb-4 ${
+                isDark ? 'border-slate-800' : 'border-slate-200'
+              }`}>
                 <div className="flex items-center space-x-3">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-teal-400 flex items-center justify-center font-bold text-white text-xs shadow-md">
                     AP
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-white">Apex Global Enterprise</h4>
-                    <p className="text-[10px] text-slate-500">Sponsored &bull; Pre-Publication Review</p>
+                    <h4 className={`text-xs font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                      Apex Global Enterprise
+                    </h4>
+                    <p className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>
+                      Sponsored &bull; Pre-Publication Review
+                    </p>
                   </div>
                 </div>
 
-                <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${
+                  isDark ? 'bg-slate-800 text-slate-300 border-slate-700' : 'bg-slate-100 text-slate-700 border-slate-200'
+                }`}>
                   {currentDraft.channel.replace('_', ' ')}
                 </span>
               </div>
 
               {/* Interactive Text Body */}
-              <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800/80 mb-4">
+              <div className={`p-4 rounded-xl border mb-4 ${
+                isDark ? 'bg-slate-950/70 border-slate-800/80' : 'bg-slate-50 border-slate-200'
+              }`}>
                 {renderInteractiveText()}
               </div>
 
               {/* Call to Action Bar */}
-              <div className="flex items-center justify-between pt-2 text-xs text-slate-400">
-                <span className="italic">
-                  Click any highlighted token to see the exact clause violation and suggested fix in the inspector.
+              <div className={`flex items-center justify-between pt-2 text-xs ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}>
+                <span className="italic text-[11px]">
+                  Click any highlighted token to view rule citations and context-aware diffs.
                 </span>
                 <button
                   onClick={() => onApplyFix('viol_1_1')}
-                  className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/40 rounded-lg font-semibold transition flex items-center space-x-1"
+                  className="px-3 py-1.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 border border-blue-500/30 rounded-lg font-semibold transition flex items-center space-x-1"
                 >
                   <span>Fast-Track Fixes</span>
                   <ArrowRight className="w-3.5 h-3.5" />
@@ -294,53 +322,69 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
         {canvasMode === 'diff' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
             {/* Left: Original Draft */}
-            <div className="border border-red-500/30 rounded-xl bg-red-950/10 p-5 flex flex-col justify-between">
+            <div className={`border rounded-xl p-5 flex flex-col justify-between ${
+              isDark ? 'border-red-500/30 bg-red-950/10' : 'border-red-200 bg-red-50/40'
+            }`}>
               <div>
-                <div className="flex items-center justify-between pb-3 border-b border-red-500/20 mb-3">
-                  <span className="text-xs font-bold text-red-400 flex items-center space-x-1.5 uppercase tracking-wider">
+                <div className={`flex items-center justify-between pb-3 border-b mb-3 ${
+                  isDark ? 'border-red-500/20 text-red-400' : 'border-red-200 text-red-700'
+                }`}>
+                  <span className="text-xs font-bold flex items-center space-x-1.5 uppercase tracking-wider">
                     <span className="w-2 h-2 rounded-full bg-red-500"></span>
                     <span>Raw Input Draft</span>
                   </span>
-                  <span className="text-[11px] text-red-300 font-mono">
+                  <span className="text-[11px] font-mono">
                     {currentDraft.violations.filter(v => v.status === 'flagged').length} Active Flags
                   </span>
                 </div>
 
-                <p className="text-sm leading-relaxed text-slate-300 whitespace-pre-wrap font-sans">
+                <p className={`text-sm leading-relaxed whitespace-pre-wrap font-sans ${
+                  isDark ? 'text-slate-300' : 'text-slate-800'
+                }`}>
                   {currentDraft.rawText}
                 </p>
               </div>
 
-              <div className="text-[11px] text-red-400/80 pt-4 border-t border-red-500/20 mt-4">
-                Contains unsubstantiated SLA superlatives and tone non-compliance.
+              <div className={`text-[11px] pt-4 border-t mt-4 ${
+                isDark ? 'border-red-500/20 text-red-400/80' : 'border-red-200 text-red-600'
+              }`}>
+                Contains unverified promotional claims and tone non-compliance.
               </div>
             </div>
 
             {/* Right: Policy-Compliant Rewrite */}
-            <div className="border border-teal-500/30 rounded-xl bg-teal-950/10 p-5 flex flex-col justify-between">
+            <div className={`border rounded-xl p-5 flex flex-col justify-between ${
+              isDark ? 'border-teal-500/30 bg-teal-950/10' : 'border-teal-200 bg-teal-50/40'
+            }`}>
               <div>
-                <div className="flex items-center justify-between pb-3 border-b border-teal-500/20 mb-3">
-                  <span className="text-xs font-bold text-teal-400 flex items-center space-x-1.5 uppercase tracking-wider">
+                <div className={`flex items-center justify-between pb-3 border-b mb-3 ${
+                  isDark ? 'border-teal-500/20 text-teal-400' : 'border-teal-200 text-teal-700'
+                }`}>
+                  <span className="text-xs font-bold flex items-center space-x-1.5 uppercase tracking-wider">
                     <span className="w-2 h-2 rounded-full bg-teal-400"></span>
                     <span>Context-Aware Suggested Rewrite</span>
                   </span>
-                  <span className="text-[11px] text-teal-300 font-mono">
-                    Grounded in Apex v4.2
+                  <span className="text-[11px] font-mono">
+                    Grounded in Brand Brain
                   </span>
                 </div>
 
-                <p className="text-sm leading-relaxed text-slate-100 whitespace-pre-wrap font-sans font-medium">
+                <p className={`text-sm leading-relaxed whitespace-pre-wrap font-sans font-medium ${
+                  isDark ? 'text-slate-100' : 'text-slate-900'
+                }`}>
                   {currentDraft.resolvedText}
                 </p>
               </div>
 
-              <div className="text-[11px] text-teal-400/80 pt-4 border-t border-teal-500/20 mt-4 flex items-center justify-between">
-                <span>Aligned with Legal SLA Clause 3.1 &amp; Brand Voice Pg 18.</span>
+              <div className={`text-[11px] pt-4 border-t mt-4 flex items-center justify-between ${
+                isDark ? 'border-teal-500/20 text-teal-400/80' : 'border-teal-200 text-teal-700'
+              }`}>
+                <span>Aligned with Legal SLA Clause 3.1.</span>
                 <button
                   onClick={() => {
                     onTextChange(currentDraft.resolvedText);
                   }}
-                  className="px-2.5 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded font-semibold text-[11px] transition"
+                  className="px-2.5 py-1 bg-teal-600 hover:bg-teal-500 text-white rounded font-semibold text-[11px] transition shadow-sm"
                 >
                   Adopt Whole Rewrite
                 </button>
@@ -352,13 +396,17 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
         {/* MODE 3: SOURCE TEXT EDITOR */}
         {canvasMode === 'editor' && (
           <div className="h-full flex flex-col space-y-3">
-            <label className="text-xs font-semibold text-slate-400">
-              Live Source Copy (Edit and click "Re-Scan" in top bar):
+            <label className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+              Live Source Copy (Edit directly and click "Re-Scan"):
             </label>
             <textarea
               value={currentDraft.rawText}
               onChange={(e) => onTextChange(e.target.value)}
-              className="flex-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm font-mono text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed resize-none"
+              className={`flex-1 w-full border rounded-xl p-4 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed resize-none shadow-inner ${
+                isDark 
+                  ? 'bg-slate-950 border-slate-800 text-slate-200' 
+                  : 'bg-white border-slate-300 text-slate-900'
+              }`}
               placeholder="Paste or type copy here..."
             />
           </div>

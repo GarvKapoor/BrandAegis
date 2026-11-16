@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from '@/components/Sidebar';
 import { TopBar } from '@/components/TopBar';
 import { InteractiveCanvas } from '@/components/InteractiveCanvas';
@@ -10,6 +10,7 @@ import { BrandBrainModal } from '@/components/BrandBrainModal';
 import { AnalyticsDashboard } from '@/components/AnalyticsDashboard';
 import { ArchitectureModal } from '@/components/ArchitectureModal';
 import { TeamContributionsModal } from '@/components/TeamContributionsModal';
+import { TutorialTour } from '@/components/TutorialTour';
 
 import { ContentDraft, UserRole } from '@/lib/types';
 import { defaultBrandBrain } from '@/lib/brandBrain';
@@ -17,6 +18,9 @@ import { benchmarkTestCases } from '@/lib/benchmarkData';
 import { runMultimodalScan } from '@/lib/linterEngine';
 
 export default function Home() {
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const isDark = theme === 'dark';
+
   const [currentTab, setCurrentTab] = useState<'studio' | 'visual' | 'workflow'>('studio');
   const [currentRole, setCurrentRole] = useState<UserRole>('creator');
   const [selectedCaseId, setSelectedCaseId] = useState<string>('case_1_fintech_claim_drift');
@@ -29,6 +33,22 @@ export default function Home() {
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isTeamOpen, setIsTeamOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(false);
+
+  // Toggle theme
+  const handleToggleTheme = () => {
+    setTheme(prev => {
+      const next = prev === 'dark' ? 'light' : 'dark';
+      if (typeof document !== 'undefined') {
+        if (next === 'light') {
+          document.documentElement.classList.add('light-theme');
+        } else {
+          document.documentElement.classList.remove('light-theme');
+        }
+      }
+      return next;
+    });
+  };
 
   // Switch Scenario Preset
   const handleSelectCase = (caseId: string) => {
@@ -56,7 +76,7 @@ export default function Home() {
       setCurrentDraft(scanned);
       setIsScanning(false);
       setActiveViolationId(scanned.violations[0]?.id || null);
-    }, 1200);
+    }, 1100);
   };
 
   // Reset to original preset
@@ -164,7 +184,9 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#080b11] text-slate-100 font-sans">
+    <div className={`flex h-screen overflow-hidden font-sans transition-colors duration-200 ${
+      isDark ? 'bg-[#080b11] text-slate-100' : 'bg-slate-50 text-slate-900'
+    }`}>
       {/* 1. Collapsible Left Navigation Sidebar */}
       <Sidebar
         currentTab={currentTab}
@@ -181,6 +203,9 @@ export default function Home() {
         onOpenArchitecture={() => setIsArchitectureOpen(true)}
         onOpenTeam={() => setIsTeamOpen(true)}
         onOpenPDF={handleOpenPDF}
+        onStartTour={() => setIsTourOpen(true)}
+        isDark={isDark}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* 2. Main Studio Workstation */}
@@ -194,6 +219,9 @@ export default function Home() {
           onReset={handleReset}
           onApplyAll={handleApplyAllFixes}
           isScanning={isScanning}
+          isDark={isDark}
+          onToggleTheme={handleToggleTheme}
+          onStartTour={() => setIsTourOpen(true)}
         />
 
         {/* Workstation Center & Inspector */}
@@ -208,6 +236,7 @@ export default function Home() {
             onApplyFix={handleApplyFix}
             activeViolationId={activeViolationId}
             onSelectViolation={(id) => setActiveViolationId(id)}
+            isDark={isDark}
           />
 
           {/* Right Brand Copilot Inspector */}
@@ -220,6 +249,7 @@ export default function Home() {
             onSelectViolation={(id) => setActiveViolationId(id)}
             score={currentDraft.score}
             currentRole={currentRole}
+            isDark={isDark}
           />
         </div>
 
@@ -231,8 +261,16 @@ export default function Home() {
           onRequestRevisions={handleRequestRevisions}
           overallScore={currentDraft.score.overall}
           pendingViolationsCount={currentDraft.violations.filter((v) => v.status === 'flagged').length}
+          isDark={isDark}
         />
       </div>
+
+      {/* Interactive Step-by-Step Tutorial Tour */}
+      <TutorialTour
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        isDark={isDark}
+      />
 
       {/* Global Modals */}
       <BrandBrainModal
