@@ -85,6 +85,12 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
   isDark
 }) => {
   const [currentStepIdx, setCurrentStepIdx] = useState(0);
+  const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
+  const [dialogPos, setDialogPos] = useState<{ left: number; top: number; width: number }>({
+    left: 360,
+    top: 500,
+    width: 560
+  });
 
   const currentStep = TOUR_STEPS[currentStepIdx];
   const isFirst = currentStepIdx === 0;
@@ -130,7 +136,45 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleNext, handlePrev, onClose]);
 
-  // Apply element spotlight
+  // Recalculate target spotlight rect and dialog anchor position
+  const updateLayout = useCallback(() => {
+    const step = TOUR_STEPS[currentStepIdx];
+    const targetEl = document.getElementById(step.targetId);
+    if (targetEl) {
+      setTargetRect(targetEl.getBoundingClientRect());
+      targetEl.classList.add('tour-target-highlight');
+    } else {
+      setTargetRect(null);
+    }
+
+    // Creative preview card anchor (AP Apex Global Enterprise card)
+    const creativeCard = document.getElementById('tour-creative-card');
+    const dialogWidth = Math.min(560, window.innerWidth * 0.90);
+    const estDialogHeight = 220;
+
+    if (creativeCard) {
+      const cardRect = creativeCard.getBoundingClientRect();
+      // Horizontally center with the AP creative card (shifted left away from the inspector)
+      const left = Math.max(16, cardRect.left + (cardRect.width - dialogWidth) / 2);
+      // Vertically position just below the AP card, clamping so it stays comfortably above the bottom approval bar
+      const maxTop = window.innerHeight - estDialogHeight - 75;
+      const idealTop = cardRect.bottom + 14;
+      const top = Math.min(idealTop, maxTop);
+
+      setDialogPos({ left, top, width: dialogWidth });
+    } else {
+      // Fallback: horizontal center of the main workspace canvas
+      const canvasLeft = 256;
+      const canvasRight = window.innerWidth - 384;
+      const canvasWidth = Math.max(300, canvasRight - canvasLeft);
+      const left = Math.max(16, canvasLeft + (canvasWidth - dialogWidth) / 2);
+      const top = window.innerHeight - estDialogHeight - 75;
+
+      setDialogPos({ left, top, width: dialogWidth });
+    }
+  }, [currentStepIdx]);
+
+  // Apply layout updates and scroll into view
   useEffect(() => {
     if (!isOpen) return;
 
@@ -138,28 +182,100 @@ export const TutorialTour: React.FC<TutorialTourProps> = ({
     const el = document.getElementById(step.targetId);
     if (el) {
       el.classList.add('tour-target-highlight');
-      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // For header or sidebar, avoid jarring auto-scroll
+      if (step.targetId !== 'tour-scenario-selector' && step.targetId !== 'tour-brand-brain') {
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     }
 
+    updateLayout();
+
+    // Re-check on next frame in case of animation or font load
+    const frameId = requestAnimationFrame(updateLayout);
+    const timeoutId = setTimeout(updateLayout, 60);
+
+    const onResizeOrScroll = () => updateLayout();
+    window.addEventListener('resize', onResizeOrScroll);
+    window.addEventListener('scroll', onResizeOrScroll, true);
+
     return () => {
+      cancelAnimationFrame(frameId);
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', onResizeOrScroll);
+      window.removeEventListener('scroll', onResizeOrScroll, true);
       if (el) {
         el.classList.remove('tour-target-highlight');
       }
     };
-  }, [isOpen, currentStepIdx]);
+  }, [isOpen, currentStepIdx, updateLayout]);
 
   if (!isOpen) return null;
 
   return (
     <>
-      {/* 1. Backdrop overlay with soft blur */}
-      <div 
-        className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-[2px] transition-opacity duration-300 pointer-events-auto"
-        onClick={onClose}
-      />
+      {/* 1. Backdrop overlay with precision SVG cutout mask (guarantees 100% bright, non-dim targets on all steps) */}
+      <svg 
+        className="fixed inset-0 z-[80] w-full h-full pointer-events-none"
+        style={{ width: '100vw', height: '100vh' }}
+      >
+        <defs>
+          <mask id="tour-cutout-mask" x="0" y="0" width="100%" height="100%">
+            {/* White fills everything so the mask is opaque (dark backdrop shows) */}
+            <rect x="0" y="0" width="100%" height="100%" fill="#ffffff" />
+            
+            {/* Black cuts out the spotlight hole: target element shines through at 100% native brightness! */}
+            {targetRect && (
+              <rect
+                x={targetRect.left - 5}
+                y={targetRect.top - 5}
+                width={targetRect.width + 10}
+                height={targetRect.height + 10}
+                rx="10"
+                ry="10"
+                fill="#000000"
+              />
+            )}
+          </mask>
+        </defs>
 
-      {/* 2. Interactive Step Div situated JUST ABOVE the Approval Gates footer */}
-      <div className="fixed bottom-16 left-1/2 -translate-x-1/2 z-[100] max-w-2xl w-[92%] sm:w-[620px] animate-pop-in pointer-events-auto">
+        {/* The dark backdrop rectangle with the mask applied */}
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          fill="rgba(0, 0, 0, 0.65)"
+          mask="url(#tour-cutout-mask)"
+          className="pointer-events-auto cursor-pointer"
+          onClick={onClose}
+        />
+      </svg>
+
+      {/* 2. Floating High-Contrast Highlight Border around the active cutout */}
+      {targetRect && (
+        <div
+          style={{
+            position: 'fixed',
+            top: `${targetRect.top - 5}px`,
+            left: `${targetRect.left - 5}px`,
+            width: `${targetRect.width + 10}px`,
+            height: `${targetRect.height + 10}px`,
+          }}
+          className="pointer-events-none z-[90] rounded-xl border-2 border-cyan-400 bg-cyan-400/10 shadow-[0_0_30px_rgba(56,189,248,0.65)] animate-pulse transition-all duration-200"
+        />
+      )}
+
+      {/* 3. Interactive Step Div shifted to the left, positioned just below the AP Creative Card */}
+      <div 
+        style={{
+          position: 'fixed',
+          left: `${dialogPos.left}px`,
+          top: `${dialogPos.top}px`,
+          width: `${dialogPos.width}px`,
+          zIndex: 100
+        }}
+        className="animate-pop-in pointer-events-auto transition-all duration-200"
+      >
         <div className={`p-4 sm:p-5 rounded-2xl border-2 shadow-2xl backdrop-blur-xl transition-all duration-300 ${
           isDark 
             ? 'bg-[#0d1322]/98 border-cyan-400/50 text-slate-100 shadow-2xl shadow-cyan-500/20' 

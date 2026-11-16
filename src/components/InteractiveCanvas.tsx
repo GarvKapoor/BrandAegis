@@ -265,7 +265,9 @@ export const InteractiveCanvas: React.FC<InteractiveCanvasProps> = ({
             )}
 
             {/* Rendered Ad / Social Creative Card */}
-            <div className={`rounded-2xl border p-6 shadow-xl relative transition-colors ${
+            <div 
+              id="tour-creative-card"
+              className={`rounded-2xl border p-6 shadow-xl relative transition-colors ${
               isDark ? 'border-slate-800 bg-slate-900/80' : 'border-slate-200 bg-white shadow-slate-100'
             }`}>
               <div className={`flex items-center justify-between pb-4 border-b mb-4 ${
