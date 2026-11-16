@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { LandingPage } from '@/components/LandingPage';
 import { Sidebar } from '@/components/Sidebar';
 import { TopBar } from '@/components/TopBar';
 import { InteractiveCanvas } from '@/components/InteractiveCanvas';
@@ -19,6 +20,7 @@ import { runMultimodalScan } from '@/lib/linterEngine';
 import { Sparkles, Compass, X, ArrowRight } from 'lucide-react';
 
 export default function Home() {
+  const [viewMode, setViewMode] = useState<'landing' | 'studio'>('landing');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   const isDark = theme === 'dark';
 
@@ -185,6 +187,32 @@ export default function Home() {
     window.open('/BrandAegis_Round1_Submission.pdf', '_blank');
   };
 
+  if (viewMode === 'landing') {
+    return (
+      <>
+        <LandingPage
+          onLaunchStudio={(scenarioId) => {
+            if (scenarioId) handleSelectCase(scenarioId);
+            setViewMode('studio');
+          }}
+          onStartTour={() => {
+            setViewMode('studio');
+            setShowFirstTimerWelcome(false);
+            setIsTourOpen(true);
+          }}
+          onOpenPDF={handleOpenPDF}
+          isDark={isDark}
+          onToggleTheme={handleToggleTheme}
+        />
+        <TutorialTour
+          isOpen={isTourOpen}
+          onClose={() => setIsTourOpen(false)}
+          isDark={isDark}
+        />
+      </>
+    );
+  }
+
   return (
     <div className={`flex h-screen overflow-hidden font-sans transition-colors duration-200 ${
       isDark ? 'bg-[#080b11] text-slate-100' : 'bg-slate-50 text-slate-900'
@@ -211,6 +239,7 @@ export default function Home() {
         }}
         isDark={isDark}
         onToggleTheme={handleToggleTheme}
+        onBackToLanding={() => setViewMode('landing')}
       />
 
       {/* 2. Main Studio Workstation */}
@@ -230,6 +259,7 @@ export default function Home() {
             setShowFirstTimerWelcome(false);
             setIsTourOpen(true);
           }}
+          onBackToLanding={() => setViewMode('landing')}
         />
 
         {/* Workstation Center & Inspector */}

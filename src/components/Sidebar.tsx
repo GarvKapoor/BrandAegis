@@ -13,7 +13,8 @@ import {
   Sparkles,
   Sun,
   Moon,
-  Compass
+  Compass,
+  Home
 } from 'lucide-react';
 import { UserRole } from '@/lib/types';
 
@@ -30,6 +31,7 @@ interface SidebarProps {
   onStartTour: () => void;
   isDark: boolean;
   onToggleTheme: () => void;
+  onBackToLanding?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -45,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onStartTour,
   isDark,
   onToggleTheme,
+  onBackToLanding,
 }) => {
   return (
     <aside className={`w-64 border-r flex flex-col justify-between h-screen sticky top-0 select-none z-30 transition-colors duration-200 ${
@@ -56,8 +59,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div>
         <div className={`p-4 border-b ${isDark ? 'border-slate-800/80' : 'border-slate-200'}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-teal-400 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <button 
+              onClick={onBackToLanding}
+              className="flex items-center space-x-2.5 text-left group transition"
+              title="Return to Product Landing Page"
+            >
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-blue-600 via-indigo-600 to-teal-400 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-105 transition transform">
                 <ShieldCheck className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -65,11 +72,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <span>BrandAegis</span>
                   <span className="text-teal-400 font-mono text-[11px]">AI</span>
                 </span>
-                <span className={`text-[10px] block -mt-0.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                  Pre-Publication Governance
+                <span className={`text-[10px] block -mt-0.5 ${isDark ? 'text-slate-400 group-hover:text-blue-400' : 'text-slate-500 group-hover:text-blue-600'} transition`}>
+                  ← Back to Overview
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Light / Dark Mode Toggle */}
             <button
